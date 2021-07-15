@@ -54,7 +54,7 @@ public class RaymarchShader implements SwingShader {
 	private static final Vector3 SKY_ALBEDO = new Vector3(0.1f,0.23f,0.6f);
 
 	//the disdance at which heightmaps are not applied anymore (LOD in the end of the day)
-	private static final float MAX_HMAP_DIST  = 10f;
+	private static final float MAX_HMAP_DIST  = 3f;
 
 	private static final Vector3 WHITE          = new Vector3(1,1,1);
 	private static final Vector3 FOG_COLOR            = new Vector3(WHITE).scl(0.6f);
@@ -180,7 +180,7 @@ public class RaymarchShader implements SwingShader {
 			//apply normal map
 			if(settings.useNormalMaps())
 				//broken for spheres, WELP, no idea why
-				applyNormalMap(hit, normal, surface);
+				applyNormalMap(normal, surface);
 
 
 			//offset for further ray casting
@@ -352,7 +352,7 @@ public class RaymarchShader implements SwingShader {
 	 * Applies the normal map to the normal of the surface (directly modifies the "normal" param)
 	 * @param normal normal to modify (and use to calculate)
 	 */
-	private void applyNormalMap(SurfaceHit hit, Vector3 normal, Surface surface) {
+	private void applyNormalMap(Vector3 normal, Surface surface) {
 		Vector3    base = new Vector3(0,0,1);
 		Quaternion q = new Quaternion().setFromCross(base, normal);
 		normal.set(q.transform(surface.normal)).nor();

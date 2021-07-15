@@ -32,8 +32,7 @@ public class Launcher {
 		JFrame frame = new JFrame();
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setSize(420,360);
-		SwingRender r = new SwingRender();
-		r.setShader(shader);
+		SwingRender r = new SwingRender(shader);
 		frame.getContentPane().add(r);
 		frame.setVisible(true);
 

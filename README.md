@@ -10,5 +10,12 @@ The performance is (who could have guessed) terrible, it takes many secconds to 
 
 The code is online for educational purposes only
 
+## Build and Run
+
+Requires Java 11 to run (Java 16+ doesn't work at this stage).
+
+To run the program execute:
+
+`./gradlew run`
 
 ### Enjoy, learn and have fun

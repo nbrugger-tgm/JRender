@@ -13,4 +13,8 @@ gradle-app.setting
 # # Work around https://youtrack.jetbrains.com/issue/IDEA-116898
 # gradle/wrapper/gradle-wrapper.properties
 
+# IntelliJ project folder
 .idea/
+
+# jenv local Java setting
+.java-version

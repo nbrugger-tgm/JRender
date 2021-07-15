@@ -23,6 +23,11 @@ public class Launcher {
 	public static void main(String[] args) throws Throwable {
 		RaymarchShader shader = new RaymarchShader();
 
+		//you dont need to understand this
+		//if you WANT to understand : https://github.com/nbrugger-tgm/reactj
+		ReactiveProxy<ReactableSettings> settingProxy = ReactiveProxy.createProxy(ReactableSettings.class);
+		shader.settings = settingProxy.getObject();
+
 		//the frame to render on
 		JFrame frame = new JFrame();
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -32,10 +37,6 @@ public class Launcher {
 		frame.getContentPane().add(r);
 		frame.setVisible(true);
 
-		//you dont need to understand this
-		//if you WANT to understand : https://github.com/nbrugger-tgm/reactj
-		ReactiveProxy<ReactableSettings> settingProxy = ReactiveProxy.createProxy(ReactableSettings.class);
-		shader.settings = settingProxy.getObject();
 
 		//creates the UI for the enable/disable buttons
 		JFrame settingFrame = new JFrame();

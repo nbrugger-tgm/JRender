@@ -5,6 +5,7 @@ import com.niton.reactj.Observer;
 import com.niton.reactj.ReactiveController;
 import com.niton.reactj.ReactiveProxy;
 import com.niton.reactj.mvc.Listener;
+import com.niton.render.RaymarchShader.RaymarchRuntime;
 import com.niton.render.ui.ReactableSettings;
 import com.niton.render.ui.RenderSettingUI;
 import com.niton.render.ui.SwingRender;
@@ -32,7 +33,7 @@ public class Launcher {
 		JFrame frame = new JFrame();
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setSize(420,360);
-		SwingRender r = new SwingRender(shader);
+		SwingRender r = new SwingRender(shader, RaymarchRuntime::new);
 		frame.getContentPane().add(r);
 		frame.setVisible(true);
 

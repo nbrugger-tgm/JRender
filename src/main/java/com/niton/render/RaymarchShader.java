@@ -14,7 +14,7 @@ import java.util.List;
  *
  * A shader computes the color of a pixel in a 3D scene projected to a 2d screen
  */
-public class RaymarchShader implements SwingShader {
+public class RaymarchShader implements SwingShader<RaymarchShader.RaymarchRuntime> {
 	//list of the objects in the world (no geometry)
 	private final List<AbstractRaymarchShape> shapes;
 	private final List<Light>                 lights;
@@ -93,7 +93,10 @@ public class RaymarchShader implements SwingShader {
 	float floorPos = -0.5f;
 
 	public RenderSettings settings;
-
+	public static class RaymarchRuntime {
+		//keeps deep the reflection hierarchy is, to possiby interrupt
+		private float reflectionDeph;
+	}
 	/**
 	 * Construct your world in here
 	 */
@@ -122,26 +125,28 @@ public class RaymarchShader implements SwingShader {
 
 	@Override
 	//documented in "SingShader"
-	public Vector3 render(Vector2 screenUV) {
+	public void render(Vector2 screenUV,Vector3 out,RaymarchRuntime run) {
 		Vector3 worldUV = screenToWorldUV(screenUV);
 		Vector3    rd  = worldUV.cpy().sub(ro).nor();
 		SurfaceHit hit = raymarch(ro, rd);
-		reflectionDeph = 1;
-
-		return resolveSurfaceColor(ro,rd, hit);
+		run.reflectionDeph = 1f;
+		resolveSurfaceColor(ro,rd, hit,out,run);
 	}
-	//keeps deep the reflection hirarchy is, to possiby interrupt (just runtime)
-	private float reflectionDeph;
 
 	/**
 	 * Calculates the color of a point in WORLD space, given a raycaster origin and the direction of the ray
 	 * @param ro the origin of the ray, used to calculate disdances, the "lense of the camera"
 	 * @param rd ray direction used to calculate lightimpact into the "lense"
 	 * @param hit the point at which the ray hit the surface including metadata
+	 * @param out
 	 * @return the color as Vec3 x,y,z->r,g,b
 	 */
-	private Vector3 resolveSurfaceColor(Vector3 ro,Vector3 rd, SurfaceHit hit) {
-		Vector3 albedo = SKY_ALBEDO.cpy();
+	private void resolveSurfaceColor(Vector3 ro,
+	                                    Vector3 rd,
+	                                    SurfaceHit hit,
+	                                    Vector3 out,
+										RaymarchRuntime run) {
+		out.set(SKY_ALBEDO);
 
 		if(hit.object != null) {
 
@@ -172,10 +177,9 @@ public class RaymarchShader implements SwingShader {
 			}
 
 			if(settings.useTextures())
-				albedo = surface.albedo;
+				out.set(surface.albedo);
 			else
-				albedo = new Vector3(1,1,1);
-
+				out.set(1,1,1);
 
 			//apply normal map
 			if(settings.useNormalMaps())
@@ -188,20 +192,22 @@ public class RaymarchShader implements SwingShader {
 			//as it would hit the surface itself
 			hit.hp.mulAdd(normal, MIN_DST * 2);
 
+
 			//apply reflections (uses recursion for GPUs you would need a workaround)
 			if(settings.useReflections())
 				//Ambient occlusion should work the same just with scl() instead of lerp()
-				applyReflection(hit, albedo, surface, rd, normal);
+				applyReflection(hit, out, surface, rd, normal,run);
 
 			//light data
 			if(settings.useSurfaceLight())
 				//light up surface if suitable
-				applyLight(hit, albedo, normal);
+				applyLight(hit, out, normal);
+
 		}
 		if(settings.isUseFog()) {
 			//fog just scales with disdance to cam
 			float fog = getFog(hit.camDst);
-			albedo.lerp(FOG_COLOR, fog);
+			out.lerp(FOG_COLOR, fog);
 		}
 		//in-lense light
 		//this should act like lens flare and speculars , but it doesnt
@@ -209,10 +215,8 @@ public class RaymarchShader implements SwingShader {
 		if(settings.isUseDirectLight()) {
 			Vector3 directLight = getDirectLight(ro, rd);
 			pow(directLight,16f);
-			albedo.add(directLight);
-
+			out.add(directLight);
 		}
-		return albedo;
 	}
 
 	//applys Math.pow to every component of a vec3
@@ -257,21 +261,26 @@ public class RaymarchShader implements SwingShader {
 
 	/**
 	 * Applies reflection on the color/surface/pixel
-	 * Uses {@link #resolveSurfaceColor(Vector3, Vector3, SurfaceHit)}
+	 * Uses {@link #resolveSurfaceColor(Vector3, Vector3, SurfaceHit, Vector3,RaymarchRuntime)}
 	 */
 	private void applyReflection(SurfaceHit hit,
 	                             Vector3 albedo,
 	                             Surface surface,
 	                             Vector3 rd,
-	                             Vector3 normal) {
-		reflectionDeph *= surface.refect;
-		if (reflectionDeph > REFLECTION_THRESHOLD) {
+	                             Vector3 normal,
+	                             RaymarchRuntime run) {
+		run.reflectionDeph *= surface.refect;
+		if (run.reflectionDeph > REFLECTION_THRESHOLD) {
 			//calculate direction to shoot at
 			Vector3 reflectVec = getReflectionVector(rd, normal);
 
 			//calculate color of the ray
 			SurfaceHit reflectionSurface = raymarch(hit.hp, reflectVec);
-			Vector3    reflectionAlbedo  = resolveSurfaceColor(hit.hp, reflectVec, reflectionSurface);
+			Vector3    reflectionAlbedo  = new Vector3();
+			resolveSurfaceColor(
+					hit.hp, reflectVec,
+					reflectionSurface, reflectionAlbedo,
+					run);
 
 			albedo.lerp(reflectionAlbedo, surface.refect);
 		}

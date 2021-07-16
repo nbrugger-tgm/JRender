@@ -82,7 +82,7 @@ public class Material {
 		return this;
 	}
 	final float[] pxl = new float[4];
-	private Vector3 uvMap(Vector2 surfaceUV, BufferedImage map) {
+	private synchronized Vector3 uvMap(Vector2 surfaceUV, BufferedImage map) {
 		try {
 			map.getRaster().getPixel(
 					(int) ((map.getWidth() * surfaceUV.x)),
@@ -95,7 +95,7 @@ public class Material {
 		return new Vector3(pxl).scl(1/255f);
 	}
 
-	public Surface getPoint(Vector2 surface2UV) {
+	public synchronized Surface getPoint(Vector2 surface2UV) {
 		Surface sur = new Surface();
 		if(useTexture)
 			sur.albedo = uvMap(surface2UV, albedoMap);

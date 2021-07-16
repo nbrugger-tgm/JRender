@@ -1,6 +1,5 @@
 package com.niton.render.ui;
 
-import com.badlogic.gdx.math.Vector2;
 import com.niton.render.RenderingThread;
 import com.niton.render.RenderingThread.PixelTask;
 import com.niton.render.SwingShader;
@@ -9,11 +8,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
-import java.util.ArrayDeque;
-import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Supplier;
 
 /**
  * Uses a jpanel to render a shader onto it
@@ -23,26 +20,30 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class SwingRender extends JPanel {
 
 	private final ThreadGroup threadGroup;
-	private final SwingShader shader;
+	private final SwingShader<?> shader;
 	BufferedImage  img;
 	WritableRaster raster;
-	private final RenderingThread[]        threads;
+	private final RenderingThread<?>[]        threads;
 
 
 	//in this pool there are many PixelTask instances ready to be used
 	//this is to avoid retundant object initialization
-	private final Queue<PixelTask>         pixelTaskPool = new ArrayDeque<>();
-	private final BlockingQueue<PixelTask> completedTasks = new LinkedBlockingQueue<>();
+	private final BlockingQueue<PixelTask> pixelTaskPool  = new LinkedBlockingQueue<>(1024);
+	private final BlockingQueue<PixelTask> completedTasks = new LinkedBlockingQueue<>(1024);
 	//Threads get the tasks from here
 	private final BlockingQueue<PixelTask> taskQueue = new LinkedBlockingQueue<>(1024);
 
-	public SwingRender(SwingShader shader) {
+
+	public<R> SwingRender(SwingShader<R> shader, Supplier<R> runtimeProducer) {
 		this.shader = shader;
 		threadGroup = new ThreadGroup("Renderers");
-		int cores = Runtime.getRuntime().availableProcessors();
+		int cores = Runtime.getRuntime().availableProcessors()-2;
 		threads = new RenderingThread[cores];
 		for (int i  = 0;i<cores;i++){
-			threads[i] = new RenderingThread(shader,taskQueue,completedTasks,threadGroup);
+			threads[i] = new RenderingThread<R>(
+					shader,
+					taskQueue, completedTasks, threadGroup,
+					runtimeProducer.get());
 			threads[i].start();
 		}
 		threadGroup.setDaemon(true);
@@ -52,7 +53,7 @@ public class SwingRender extends JPanel {
 	private void createPixelBuffer(int w,int h) {
 		img    = new BufferedImage(w,h,BufferedImage.TYPE_INT_RGB);
 		raster = img.getRaster();
-		while (pixelTaskPool.size()<Math.max(w*h,taskQueue.remainingCapacity())){
+		while (pixelTaskPool.remainingCapacity()>0){
 			pixelTaskPool.add(new PixelTask());
 		}
 	}
@@ -72,38 +73,35 @@ public class SwingRender extends JPanel {
 		shader.setDimension(w,h);
 		shader.frame();
 		System.out.println("w/h = "+w+"/"+h+" = "+w*h+" = "+pixelTaskPool.size()+" >= "+taskQueue.remainingCapacity());
-		for (int i = 0; i < w; i++) {
-			for (int y = 0; y < h; y++) {
-				//calculating UVs and interpreting the result of the shader
-				float ux = (float) i/w;
-				float uy = (float) y/h;
-				PixelTask task;
-				synchronized (pixelTaskPool) {
-					task = pixelTaskPool.poll();
-				}
-				task.uvCordinate = new Vector2(ux,uy);
-				task.x = i;
-				task.y = y;
-				task.raster = raster;
-				try {
-					taskQueue.put(task);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+		long start = System.currentTimeMillis();
+		new Thread(()->{
+			for (int i = 0; i < w; i++) {
+				for (int y = 0; y < h; y++) {
+					//calculating UVs and interpreting the result of the shader
+					try {
+						PixelTask task = pixelTaskPool.take();
+						task.x = i;
+						task.y = y;
+						task.raster = raster;
+						taskQueue.put(task);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 				}
 			}
-		}
+		},"Pixel task creator").start();
 		//paint image to UI
 		for (int i = 0; i < dimens; i++) {
-			PixelTask completed;
 			try {
-				completed = completedTasks.take();
+				PixelTask completed = completedTasks.take();
+				raster.setPixel(completed.x,completed.y,completed.output);
+				pixelTaskPool.add(completed);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 				break;
 			}
-			raster.setPixel(completed.x,completed.y,completed.output);
-			pixelTaskPool.add(completed);
 		}
+		System.out.println("Rendering time : "+(System.currentTimeMillis()-start)+"ms");
 		g2d.drawImage(img,0,0,null);
 	}
 }

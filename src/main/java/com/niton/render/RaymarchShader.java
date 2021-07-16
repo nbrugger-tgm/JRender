@@ -14,7 +14,7 @@ import java.util.List;
  *
  * A shader computes the color of a pixel in a 3D scene projected to a 2d screen
  */
-public class RaymarchShader implements SwingShader {
+public class RaymarchShader implements SwingShader<RaymarchShader.RaymarchRuntime> {
 	//list of the objects in the world (no geometry)
 	private final List<AbstractRaymarchShape> shapes;
 	private final List<Light>                 lights;
@@ -54,7 +54,7 @@ public class RaymarchShader implements SwingShader {
 	private static final Vector3 SKY_ALBEDO = new Vector3(0.1f,0.23f,0.6f);
 
 	//the disdance at which heightmaps are not applied anymore (LOD in the end of the day)
-	private static final float MAX_HMAP_DIST  = 10f;
+	private static final float MAX_HMAP_DIST  = 3f;
 
 	private static final Vector3 WHITE          = new Vector3(1,1,1);
 	private static final Vector3 FOG_COLOR            = new Vector3(WHITE).scl(0.6f);
@@ -93,7 +93,10 @@ public class RaymarchShader implements SwingShader {
 	float floorPos = -0.5f;
 
 	public RenderSettings settings;
-
+	public static class RaymarchRuntime {
+		//keeps deep the reflection hierarchy is, to possiby interrupt
+		private float reflectionDeph;
+	}
 	/**
 	 * Construct your world in here
 	 */
@@ -122,26 +125,28 @@ public class RaymarchShader implements SwingShader {
 
 	@Override
 	//documented in "SingShader"
-	public Vector3 render(Vector2 screenUV) {
+	public void render(Vector2 screenUV,Vector3 out,RaymarchRuntime run) {
 		Vector3 worldUV = screenToWorldUV(screenUV);
 		Vector3    rd  = worldUV.cpy().sub(ro).nor();
 		SurfaceHit hit = raymarch(ro, rd);
-		reflectionDeph = 1;
-
-		return resolveSurfaceColor(ro,rd, hit);
+		run.reflectionDeph = 1f;
+		resolveSurfaceColor(ro,rd, hit,out,run);
 	}
-	//keeps deep the reflection hirarchy is, to possiby interrupt (just runtime)
-	private float reflectionDeph;
 
 	/**
 	 * Calculates the color of a point in WORLD space, given a raycaster origin and the direction of the ray
 	 * @param ro the origin of the ray, used to calculate disdances, the "lense of the camera"
 	 * @param rd ray direction used to calculate lightimpact into the "lense"
 	 * @param hit the point at which the ray hit the surface including metadata
+	 * @param out
 	 * @return the color as Vec3 x,y,z->r,g,b
 	 */
-	private Vector3 resolveSurfaceColor(Vector3 ro,Vector3 rd, SurfaceHit hit) {
-		Vector3 albedo = SKY_ALBEDO.cpy();
+	private void resolveSurfaceColor(Vector3 ro,
+	                                    Vector3 rd,
+	                                    SurfaceHit hit,
+	                                    Vector3 out,
+										RaymarchRuntime run) {
+		out.set(SKY_ALBEDO);
 
 		if(hit.object != null) {
 
@@ -157,10 +162,11 @@ public class RaymarchShader implements SwingShader {
 				System.err.println("UV2    : "+surface2UV);
 				System.err.println("Object : "+hit.object);
 			}
-
+			Surface surface;
 			//reading the regarding point from height/normal etc map
-			Surface surface = hit.object.mat.getPoint(surface2UV);
-
+			synchronized (hit.object.mat) {
+				 surface = hit.object.mat.getPoint(surface2UV);
+			}
 			//apply height map
 			if(settings.useHeightMap() && MAX_HMAP_DIST > hit.camDst) {
 				//the way i apply heightmaps might be bad or "non standard" as i have no idea
@@ -172,15 +178,14 @@ public class RaymarchShader implements SwingShader {
 			}
 
 			if(settings.useTextures())
-				albedo = surface.albedo;
+				out.set(surface.albedo);
 			else
-				albedo = new Vector3(1,1,1);
-
+				out.set(1,1,1);
 
 			//apply normal map
 			if(settings.useNormalMaps())
 				//broken for spheres, WELP, no idea why
-				applyNormalMap(hit, normal, surface);
+				applyNormalMap(normal, surface);
 
 
 			//offset for further ray casting
@@ -188,20 +193,22 @@ public class RaymarchShader implements SwingShader {
 			//as it would hit the surface itself
 			hit.hp.mulAdd(normal, MIN_DST * 2);
 
+
 			//apply reflections (uses recursion for GPUs you would need a workaround)
 			if(settings.useReflections())
 				//Ambient occlusion should work the same just with scl() instead of lerp()
-				applyReflection(hit, albedo, surface, rd, normal);
+				applyReflection(hit, out, surface, rd, normal,run);
 
 			//light data
 			if(settings.useSurfaceLight())
 				//light up surface if suitable
-				applyLight(hit, albedo, normal);
+				applyLight(hit, out, normal);
+
 		}
 		if(settings.isUseFog()) {
 			//fog just scales with disdance to cam
 			float fog = getFog(hit.camDst);
-			albedo.lerp(FOG_COLOR, fog);
+			out.lerp(FOG_COLOR, fog);
 		}
 		//in-lense light
 		//this should act like lens flare and speculars , but it doesnt
@@ -209,10 +216,8 @@ public class RaymarchShader implements SwingShader {
 		if(settings.isUseDirectLight()) {
 			Vector3 directLight = getDirectLight(ro, rd);
 			pow(directLight,16f);
-			albedo.add(directLight);
-
+			out.add(directLight);
 		}
-		return albedo;
 	}
 
 	//applys Math.pow to every component of a vec3
@@ -257,21 +262,26 @@ public class RaymarchShader implements SwingShader {
 
 	/**
 	 * Applies reflection on the color/surface/pixel
-	 * Uses {@link #resolveSurfaceColor(Vector3, Vector3, SurfaceHit)}
+	 * Uses {@link #resolveSurfaceColor(Vector3, Vector3, SurfaceHit, Vector3,RaymarchRuntime)}
 	 */
 	private void applyReflection(SurfaceHit hit,
 	                             Vector3 albedo,
 	                             Surface surface,
 	                             Vector3 rd,
-	                             Vector3 normal) {
-		reflectionDeph *= surface.refect;
-		if (reflectionDeph > REFLECTION_THRESHOLD) {
+	                             Vector3 normal,
+	                             RaymarchRuntime run) {
+		run.reflectionDeph *= surface.refect;
+		if (run.reflectionDeph > REFLECTION_THRESHOLD) {
 			//calculate direction to shoot at
 			Vector3 reflectVec = getReflectionVector(rd, normal);
 
 			//calculate color of the ray
 			SurfaceHit reflectionSurface = raymarch(hit.hp, reflectVec);
-			Vector3    reflectionAlbedo  = resolveSurfaceColor(hit.hp, reflectVec, reflectionSurface);
+			Vector3    reflectionAlbedo  = new Vector3();
+			resolveSurfaceColor(
+					hit.hp, reflectVec,
+					reflectionSurface, reflectionAlbedo,
+					run);
 
 			albedo.lerp(reflectionAlbedo, surface.refect);
 		}
@@ -322,24 +332,26 @@ public class RaymarchShader implements SwingShader {
 		mappedSurf.surf = surface;
 		mappedSurf.normal = normal;
 		int i = 0;
-		while(mappedSurf.surf.depth*PBR_STRENGTH -posDeph>=step/2 && i<(PBR_STEPS*PBR_STEPS)){
-			hit.hp.mulAdd(rd,step);
-			hit.camDst += step;
+		synchronized (hit.object.mat) {
+			while (mappedSurf.surf.depth * PBR_STRENGTH - posDeph >= step / 2 && i < (PBR_STEPS * PBR_STEPS)) {
+				hit.hp.mulAdd(rd, step);
+				hit.camDst += step;
 
-			//if hp dist to obj > MINDIST*1.5 -> raycast -> replace hp
+				//if hp dist to obj > MINDIST*1.5 -> raycast -> replace hp
 
-			float dstToSurf = -hit.object.sdf(hit.hp);
-			hit.hp.mulAdd(mappedSurf.normal,dstToSurf);
-			hit.dst = dstToSurf;
+				float dstToSurf = -hit.object.sdf(hit.hp);
+				hit.hp.mulAdd(mappedSurf.normal, dstToSurf);
+				hit.dst = dstToSurf;
 
-			Vector3 surfaceUV  = hit.object.getUVCord(hit);
-			Vector2 surface2UV = surfaceUVToObjectSpace(surfaceUV);
+				Vector3 surfaceUV  = hit.object.getUVCord(hit);
+				Vector2 surface2UV = surfaceUVToObjectSpace(surfaceUV);
 
-			mappedSurf.surf = hit.object.mat.getPoint(surface2UV);
-			mappedSurf.normal = getNormal(hit);
-			posDeph += dstToSurf;
-			i++;
+				mappedSurf.surf   = hit.object.mat.getPoint(surface2UV);
+				mappedSurf.normal = getNormal(hit);
+				posDeph += dstToSurf;
+				i++;
 
+			}
 		}
 		return mappedSurf;
 	}
@@ -352,7 +364,7 @@ public class RaymarchShader implements SwingShader {
 	 * Applies the normal map to the normal of the surface (directly modifies the "normal" param)
 	 * @param normal normal to modify (and use to calculate)
 	 */
-	private void applyNormalMap(SurfaceHit hit, Vector3 normal, Surface surface) {
+	private void applyNormalMap(Vector3 normal, Surface surface) {
 		Vector3    base = new Vector3(0,0,1);
 		Quaternion q = new Quaternion().setFromCross(base, normal);
 		normal.set(q.transform(surface.normal)).nor();

@@ -37,11 +37,11 @@ public class RaymarchShader implements SwingShader<RaymarchShader.RaymarchRuntim
 	private static final float   MAX_FOG_DIST         = MAX_DST * 0.75f;
 
 	//how much carving the heightmap causes             value in world space
-	private static final float   PBR_STRENGTH         = 0.13f;
+	private static final float   PBR_STRENGTH         = 0.1f;
 
 	//VERY CPU HEAVY    defines how many steps to make to march thru pseudo space caused by heightmaps
 	//makes "fake" edges from heightmaps look way better, recommended range 10-70
-	private static final int     PBR_STEPS            = 75;
+	private static final int     PBR_STEPS            = 50;
 
 	//If a point is visible in reflection it wont be rendered if it was just visible by taht percentage
 	//0.01 -> 1% -> if a surface is 50% reflective and it reflects a surface which itself if 50%
@@ -59,8 +59,8 @@ public class RaymarchShader implements SwingShader<RaymarchShader.RaymarchRuntim
 	private static final Vector3 WHITE          = new Vector3(1,1,1);
 	private static final Vector3 FOG_COLOR            = new Vector3(WHITE).scl(0.6f);
 
-	//"rock-slab-wall"
 	Material futureMetal = 	new Material("spaceship-panels1");
+	Material slabs = 	new Material("rock-slab-wall");
 	Material rust = new Material()
 			.setName("rustediron2")
 			.setUseTexture(true)
@@ -164,9 +164,8 @@ public class RaymarchShader implements SwingShader<RaymarchShader.RaymarchRuntim
 			}
 			Surface surface;
 			//reading the regarding point from height/normal etc map
-			synchronized (hit.object.mat) {
-				 surface = hit.object.mat.getPoint(surface2UV);
-			}
+			surface = hit.object.mat.getPoint(surface2UV);
+
 			//apply height map
 			if(settings.useHeightMap() && MAX_HMAP_DIST > hit.camDst) {
 				//the way i apply heightmaps might be bad or "non standard" as i have no idea
@@ -194,15 +193,16 @@ public class RaymarchShader implements SwingShader<RaymarchShader.RaymarchRuntim
 			hit.hp.mulAdd(normal, MIN_DST * 2);
 
 
-			//apply reflections (uses recursion for GPUs you would need a workaround)
-			if(settings.useReflections())
-				//Ambient occlusion should work the same just with scl() instead of lerp()
-				applyReflection(hit, out, surface, rd, normal,run);
 
 			//light data
 			if(settings.useSurfaceLight())
 				//light up surface if suitable
 				applyLight(hit, out, normal);
+
+			//apply reflections (uses recursion for GPUs you would need a workaround)
+			if(settings.useReflections())
+				//Ambient occlusion should work the same just with scl() instead of lerp()
+				applyReflection(hit, out, surface, rd, normal,run);
 
 		}
 		if(settings.isUseFog()) {
@@ -332,26 +332,24 @@ public class RaymarchShader implements SwingShader<RaymarchShader.RaymarchRuntim
 		mappedSurf.surf = surface;
 		mappedSurf.normal = normal;
 		int i = 0;
-		synchronized (hit.object.mat) {
-			while (mappedSurf.surf.depth * PBR_STRENGTH - posDeph >= step / 2 && i < (PBR_STEPS * PBR_STEPS)) {
-				hit.hp.mulAdd(rd, step);
-				hit.camDst += step;
+		while (mappedSurf.surf.depth * PBR_STRENGTH - posDeph >= step / 2 && i < (PBR_STEPS * PBR_STEPS)) {
+			hit.hp.mulAdd(rd, step);
+			hit.camDst += step;
 
-				//if hp dist to obj > MINDIST*1.5 -> raycast -> replace hp
+			//if hp dist to obj > MINDIST*1.5 -> raycast -> replace hp
 
-				float dstToSurf = -hit.object.sdf(hit.hp);
-				hit.hp.mulAdd(mappedSurf.normal, dstToSurf);
-				hit.dst = dstToSurf;
+			float dstToSurf = -hit.object.sdf(hit.hp);
+			hit.hp.mulAdd(mappedSurf.normal, dstToSurf);
+			hit.dst = dstToSurf;
 
-				Vector3 surfaceUV  = hit.object.getUVCord(hit);
-				Vector2 surface2UV = surfaceUVToObjectSpace(surfaceUV);
+			Vector3 surfaceUV  = hit.object.getUVCord(hit);
+			Vector2 surface2UV = surfaceUVToObjectSpace(surfaceUV);
 
-				mappedSurf.surf   = hit.object.mat.getPoint(surface2UV);
-				mappedSurf.normal = getNormal(hit);
-				posDeph += dstToSurf;
-				i++;
+			mappedSurf.surf   = hit.object.mat.getPoint(surface2UV);
+			mappedSurf.normal = getNormal(hit);
+			posDeph += dstToSurf;
+			i++;
 
-			}
 		}
 		return mappedSurf;
 	}

@@ -51,11 +51,15 @@ public class Material {
 	}
 
 	private String        name;
-	private BufferedImage albedoMap;
-	private BufferedImage normalMap;
-	private BufferedImage heightMap;
-	private BufferedImage aoMap;
-	private BufferedImage metallicMap;
+	//component = map[3*(y*width+x)+compIndex]
+	//redIndex = 0
+	//greenIndex = 1
+	//blueIndex = 2
+	private MapAsset albedoMap;
+	private MapAsset normalMap;
+	private MapAsset heightMap;
+	private MapAsset aoMap;
+	private MapAsset metallicMap;
 
 	public Material(String name) throws IOException {
 		this.name = name;
@@ -70,39 +74,42 @@ public class Material {
 	}
 
 	public Material readMaps() throws IOException {
-		albedoMap = useTexture?
-				ImageIO.read(Objects.requireNonNull(RaymarchShader.class.getResourceAsStream("/"+ this.name +"_albedo.png"))):null;
-		normalMap = useNormalMap?ImageIO.read(Objects.requireNonNull(RaymarchShader.class.getResourceAsStream("/"+ this.name +"_normal.png"))):null;
-		heightMap = useHeightMap?
-				ImageIO.read(Objects.requireNonNull(RaymarchShader.class.getResourceAsStream("/"+ this.name +"_height.png"))):null;
-		aoMap     = useAOMap?
-				ImageIO.read(Objects.requireNonNull(RaymarchShader.class.getResourceAsStream("/"+ this.name +"_height.png"))):null;
-		metallicMap = useMetallicMap?
-				ImageIO.read(Objects.requireNonNull(RaymarchShader.class.getResourceAsStream("/"+ this.name +"_metallic.png"))):null;
+		albedoMap   = useTexture ?     new MapAsset(loadMap("albedo"),3)   : null;
+		normalMap   = useNormalMap ?   new MapAsset(loadMap("normal"),3)   : null;
+		heightMap   = useHeightMap ?   new MapAsset(loadMap("height"),1)   : null;
+		aoMap       = useAOMap ?       new MapAsset(loadMap("ao"),1)   : null;
+		metallicMap = useMetallicMap ? new MapAsset(loadMap("metallic"),1) : null;
+		System.gc();
 		return this;
 	}
-	final float[] pxl = new float[4];
-	private final Vector3 mapReadBuffer = new Vector3();
-	private Vector3 uvMap(Vector2 surfaceUV, BufferedImage map) {
-		map.getRaster().getPixel(
-				(int) ((map.getWidth() * surfaceUV.x)),
-				(int) ((map.getHeight() * surfaceUV.y)),
-				pxl);
-		return mapReadBuffer.set(pxl).scl(1/255f);
+
+	private final static String format = "/%s_%s.png";
+	private BufferedImage loadMap(String type) throws IOException {
+		return ImageIO.read(Objects.requireNonNull(RaymarchShader.class.getResourceAsStream(String.format(
+				format,
+				this.name,
+				type
+		))));
 	}
 
+	private float scalarUvMap(Vector2 surfaceUV, float[] map,int width,int height) {
+		int x = (int) (width * surfaceUV.x);
+		int y = (int) (height * surfaceUV.y);
+		return map[y*width+x];
+	}
 	public Surface getPoint(Vector2 surface2UV) {
 		Surface sur = new Surface();
+		float[] buff = new float[3];
 		if (useTexture)
-			sur.albedo.set(uvMap(surface2UV, albedoMap));
+			sur.albedo.set(albedoMap.get(surface2UV,buff));
 		if (useNormalMap)
-			sur.normal.set(uvMap(surface2UV, normalMap).sub(0.5f).scl(2).nor());
+			sur.normal.set(normalMap.get(surface2UV,buff)).sub(0.5f).scl(2).nor();
 		if (useHeightMap)
-			sur.depth = 1 - uvMap(surface2UV, heightMap).x;
+			sur.depth = 1 - heightMap.get(surface2UV,buff)[0];
 		if (useAOMap)
-			sur.ao = uvMap(surface2UV, aoMap).x;
+			sur.ao = aoMap.get(surface2UV,buff)[0];
 		if (useMetallicMap)
-			sur.refect = uvMap(surface2UV, metallicMap).x;
+			sur.refect = metallicMap.get(surface2UV,buff)[0];
 		return sur;
 	}
 }

@@ -82,31 +82,27 @@ public class Material {
 		return this;
 	}
 	final float[] pxl = new float[4];
-	private synchronized Vector3 uvMap(Vector2 surfaceUV, BufferedImage map) {
-		try {
-			map.getRaster().getPixel(
-					(int) ((map.getWidth() * surfaceUV.x)),
-					(int) ((map.getHeight() * surfaceUV.y)),
-					pxl);
-		}catch (Exception e){
-			e.printStackTrace();
-			System.exit(1);
-		}
-		return new Vector3(pxl).scl(1/255f);
+	private final Vector3 mapReadBuffer = new Vector3();
+	private Vector3 uvMap(Vector2 surfaceUV, BufferedImage map) {
+		map.getRaster().getPixel(
+				(int) ((map.getWidth() * surfaceUV.x)),
+				(int) ((map.getHeight() * surfaceUV.y)),
+				pxl);
+		return mapReadBuffer.set(pxl).scl(1/255f);
 	}
 
-	public synchronized Surface getPoint(Vector2 surface2UV) {
+	public Surface getPoint(Vector2 surface2UV) {
 		Surface sur = new Surface();
-		if(useTexture)
-			sur.albedo = uvMap(surface2UV, albedoMap);
-		if(useNormalMap)
-			sur.normal = uvMap(surface2UV,normalMap).sub(0.5f).scl(2).nor();
-		if(useHeightMap)
-			sur.depth = 1-uvMap(surface2UV, heightMap).x;
-		if(useAOMap)
-			sur.ao = uvMap(surface2UV,aoMap).x;
-		if(useMetallicMap)
-			sur.refect = uvMap(surface2UV,metallicMap).x;
+		if (useTexture)
+			sur.albedo.set(uvMap(surface2UV, albedoMap));
+		if (useNormalMap)
+			sur.normal.set(uvMap(surface2UV, normalMap).sub(0.5f).scl(2).nor());
+		if (useHeightMap)
+			sur.depth = 1 - uvMap(surface2UV, heightMap).x;
+		if (useAOMap)
+			sur.ao = uvMap(surface2UV, aoMap).x;
+		if (useMetallicMap)
+			sur.refect = uvMap(surface2UV, metallicMap).x;
 		return sur;
 	}
 }

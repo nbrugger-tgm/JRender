@@ -162,10 +162,11 @@ public class RaymarchShader implements SwingShader<RaymarchShader.RaymarchRuntim
 				System.err.println("UV2    : "+surface2UV);
 				System.err.println("Object : "+hit.object);
 			}
-
+			Surface surface;
 			//reading the regarding point from height/normal etc map
-			Surface surface = hit.object.mat.getPoint(surface2UV);
-
+			synchronized (hit.object.mat) {
+				 surface = hit.object.mat.getPoint(surface2UV);
+			}
 			//apply height map
 			if(settings.useHeightMap() && MAX_HMAP_DIST > hit.camDst) {
 				//the way i apply heightmaps might be bad or "non standard" as i have no idea
@@ -331,24 +332,26 @@ public class RaymarchShader implements SwingShader<RaymarchShader.RaymarchRuntim
 		mappedSurf.surf = surface;
 		mappedSurf.normal = normal;
 		int i = 0;
-		while(mappedSurf.surf.depth*PBR_STRENGTH -posDeph>=step/2 && i<(PBR_STEPS*PBR_STEPS)){
-			hit.hp.mulAdd(rd,step);
-			hit.camDst += step;
+		synchronized (hit.object.mat) {
+			while (mappedSurf.surf.depth * PBR_STRENGTH - posDeph >= step / 2 && i < (PBR_STEPS * PBR_STEPS)) {
+				hit.hp.mulAdd(rd, step);
+				hit.camDst += step;
 
-			//if hp dist to obj > MINDIST*1.5 -> raycast -> replace hp
+				//if hp dist to obj > MINDIST*1.5 -> raycast -> replace hp
 
-			float dstToSurf = -hit.object.sdf(hit.hp);
-			hit.hp.mulAdd(mappedSurf.normal,dstToSurf);
-			hit.dst = dstToSurf;
+				float dstToSurf = -hit.object.sdf(hit.hp);
+				hit.hp.mulAdd(mappedSurf.normal, dstToSurf);
+				hit.dst = dstToSurf;
 
-			Vector3 surfaceUV  = hit.object.getUVCord(hit);
-			Vector2 surface2UV = surfaceUVToObjectSpace(surfaceUV);
+				Vector3 surfaceUV  = hit.object.getUVCord(hit);
+				Vector2 surface2UV = surfaceUVToObjectSpace(surfaceUV);
 
-			mappedSurf.surf = hit.object.mat.getPoint(surface2UV);
-			mappedSurf.normal = getNormal(hit);
-			posDeph += dstToSurf;
-			i++;
+				mappedSurf.surf   = hit.object.mat.getPoint(surface2UV);
+				mappedSurf.normal = getNormal(hit);
+				posDeph += dstToSurf;
+				i++;
 
+			}
 		}
 		return mappedSurf;
 	}

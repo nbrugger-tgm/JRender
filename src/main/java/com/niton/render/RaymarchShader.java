@@ -37,7 +37,7 @@ public class RaymarchShader implements SwingShader<RaymarchShader.RaymarchRuntim
 	private static final float   MAX_FOG_DIST         = MAX_DST * 0.75f;
 
 	//how much carving the heightmap causes             value in world space
-	private static final float   PBR_STRENGTH         = 0.1f;
+	private static final float   PBR_STRENGTH         = 0.05f;
 
 	//VERY CPU HEAVY    defines how many steps to make to march thru pseudo space caused by heightmaps
 	//makes "fake" edges from heightmaps look way better, recommended range 10-70
@@ -171,9 +171,14 @@ public class RaymarchShader implements SwingShader<RaymarchShader.RaymarchRuntim
 				//the way i apply heightmaps might be bad or "non standard" as i have no idea
 				//ho this is normally done (also restricted myself from googeling).
 				//What i have done is very CPU intensive but it works
-				HeightMappedSurface hMapSurface = applyHeightMap(hit, normal, surface, rd);
+				HeightMappedSurface hMapSurface = applyHeightMap(hit, normal, surface, rd, out,
+				                                                 run);
 				surface = hMapSurface.surf;
 				normal = hMapSurface.normal;
+				if(hMapSurface.passthru) {
+					out.set(hMapSurface.albedo);
+					return;
+				}
 			}
 
 			if(settings.useTextures())
@@ -302,12 +307,16 @@ public class RaymarchShader implements SwingShader<RaymarchShader.RaymarchRuntim
 	 * @param normal the mathematical normal
 	 * @param surface the expected surface props
 	 * @param rd ray direction
+	 * @param albedo
+	 * @param run
 	 * @return a new surface and hitpoint
 	 */
 	private HeightMappedSurface applyHeightMap(SurfaceHit hit,
-	                               Vector3 normal,
-	                               Surface surface,
-	                               Vector3 rd) {
+	                                           Vector3 normal,
+	                                           Surface surface,
+	                                           Vector3 rd,
+	                                           Vector3 albedo,
+	                                           RaymarchRuntime run) {
 
 		/*
 		 * Instead of explaining every line here is a summery.
@@ -331,6 +340,8 @@ public class RaymarchShader implements SwingShader<RaymarchShader.RaymarchRuntim
 		HeightMappedSurface mappedSurf = new HeightMappedSurface();
 		mappedSurf.surf = surface;
 		mappedSurf.normal = normal;
+		mappedSurf.albedo = albedo;
+		mappedSurf.passthru = false;
 		int i = 0;
 		while (mappedSurf.surf.depth * PBR_STRENGTH - posDeph >= step / 2 && i < (PBR_STEPS * PBR_STEPS)) {
 			hit.hp.mulAdd(rd, step);
@@ -339,6 +350,16 @@ public class RaymarchShader implements SwingShader<RaymarchShader.RaymarchRuntim
 			//if hp dist to obj > MINDIST*1.5 -> raycast -> replace hp
 
 			float dstToSurf = -hit.object.sdf(hit.hp);
+
+			//ray passed thru object
+			if(dstToSurf<-MIN_DST*1.2f){
+				SurfaceHit behindHit = raymarch(hit.hp,rd);
+				behindHit.camDst+=hit.camDst;
+				resolveSurfaceColor(ro,rd,behindHit,mappedSurf.albedo,run);
+				mappedSurf.passthru = true;
+				return mappedSurf;
+			}
+
 			hit.hp.mulAdd(mappedSurf.normal, dstToSurf);
 			hit.dst = dstToSurf;
 

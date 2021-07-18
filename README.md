@@ -10,6 +10,22 @@ The performance is (who could have guessed) terrible, it takes many secconds to 
 
 The code is online for educational purposes only
 
+## Examples / Features
+
+#### Light 
+
+![](media/lightning.jpg)
+
+#### Reflections
+
+![](media/reflections.jpg)
+
+#### Height/Depth maps
+
+![](media/height-map1.jpg)
+
+![](media/height-map2.jpg)
+
 ## Build and Run
 
 Requires Java 11 to run (Java 16+ doesn't work at this stage).

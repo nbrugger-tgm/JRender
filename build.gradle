@@ -10,6 +10,12 @@ application {
 group 'com.niton'
 version '1.0-a'
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
+}
+
 repositories {
     mavenCentral()
     maven {

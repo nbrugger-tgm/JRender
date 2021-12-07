@@ -1,13 +1,12 @@
 package com.niton.render.shape;
 
 import com.badlogic.gdx.math.Vector3;
-import com.niton.render.AbstractRaymarchShape;
-import com.niton.render.Material;
 import com.niton.render.SurfaceHit;
+import com.niton.render.world.Material;
 
 public class RaymarchSphere extends AbstractRaymarchShape {
 	private final Vector3 center;
-	private final float radius;
+	private final float   radius;
 
 	public RaymarchSphere(Vector3 center, float radius) {
 		super(new Material());
@@ -21,7 +20,7 @@ public class RaymarchSphere extends AbstractRaymarchShape {
 		this.radius = radius;
 	}
 
-	public Vector3 getUVCord(SurfaceHit hp){
+	public Vector3 getUVCord(SurfaceHit hp) {
 		return abs(center.cpy().sub(hp.hp));
 	}
 
@@ -34,6 +33,6 @@ public class RaymarchSphere extends AbstractRaymarchShape {
 
 	@Override
 	public float sdf(Vector3 point) {
-		return center.cpy().sub(point).len()-radius;
+		return center.cpy().sub(point).len() - radius;
 	}
 }

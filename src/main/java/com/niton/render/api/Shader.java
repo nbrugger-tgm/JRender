@@ -1,4 +1,4 @@
-package com.niton.render;
+package com.niton.render.api;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
@@ -9,7 +9,7 @@ import com.badlogic.gdx.math.Vector3;
  *
  *           the runtime is used to store runtime variables this is needed for multi threading
  */
-public interface SwingShader<R> {
+public interface Shader<R> {
 	/**
 	 * Calculates the color for a pixel on the screen based on a virtual 3D world
 	 * @param screenUV the poition of the pixel to color (on the screen) [0..1]

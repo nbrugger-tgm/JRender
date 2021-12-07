@@ -1,4 +1,4 @@
-package com.niton.render;
+package com.niton.render.world;
 
 import com.badlogic.gdx.math.Vector3;
 

@@ -1,4 +1,4 @@
-package com.niton.render;
+package com.niton.render.renderers;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
@@ -6,23 +6,23 @@ import com.niton.render.api.RenderTarget;
 import com.niton.render.api.Renderer;
 import com.niton.render.api.Shader;
 
-public class SingleCoreRenderer<R> implements Renderer<R> {
+public class SingleCoreRenderer implements Renderer {
 	private final Vector3      out = new Vector3();
 	private final Vector2      uv  = new Vector2();
-	private final R            runtime;
 	private       RenderTarget target;
-
-	public SingleCoreRenderer(R runtime) {this.runtime = runtime;}
 
 
 	@Override
-	public void render(Shader<R> shader) {
+	public <R> void render(Shader<R> shader) {
 		int w = target.getWidth();
 		int h = target.getHeight();
 
 		long start = System.currentTimeMillis();
 		shader.setDimension(w, h);
 		shader.frame();
+
+		R runtime = shader.createRuntime();
+
 		for (int y = 0; y < h; y++) {
 			float uy = (float) y / h;
 			for (int x = 0; x < w; x++) {

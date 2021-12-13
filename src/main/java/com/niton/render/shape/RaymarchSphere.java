@@ -1,7 +1,7 @@
 package com.niton.render.shape;
 
 import com.badlogic.gdx.math.Vector3;
-import com.niton.render.SurfaceHit;
+import com.niton.render.raymarching.SurfaceHit;
 import com.niton.render.world.Material;
 
 public class RaymarchSphere extends AbstractRaymarchShape {

@@ -1,4 +1,4 @@
-package com.niton.render;
+package com.niton.render.raymarching;
 
 public class RenderSettings {
 	private boolean useTextures;
@@ -8,6 +8,7 @@ public class RenderSettings {
 	private boolean useSurfaceLight;
 	private boolean useFog;
 	private boolean useDirectLight;
+	private boolean useShadows = true;
 
 	public boolean useTextures() {
 		return useTextures;
@@ -49,7 +50,7 @@ public class RenderSettings {
 		this.useSurfaceLight = useSurfaceLight;
 	}
 
-	public boolean isUseFog() {
+	public boolean useFog() {
 		return useFog;
 	}
 
@@ -57,12 +58,20 @@ public class RenderSettings {
 		this.useFog = useFog;
 	}
 
-	public boolean isUseDirectLight() {
+	public boolean useDirectLight() {
 		return useDirectLight;
 	}
 
 	public void setUseDirectLight(boolean useDirectLight) {
 		this.useDirectLight = useDirectLight;
+	}
+
+	public void setUseShadows(boolean useShadows) {
+		this.useShadows = useShadows;
+	}
+
+	public boolean useShadows() {
+		return useShadows;
 	}
 
 	@Override

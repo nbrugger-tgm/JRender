@@ -2,40 +2,36 @@ package com.niton.render.world;
 
 import com.badlogic.gdx.math.Vector3;
 import com.niton.render.Metal;
-import com.niton.render.SurfaceHit;
+import com.niton.render.raymarching.SurfaceHit;
 import com.niton.render.shape.RaymarchShape;
 import com.niton.render.shape.RaymarchSphere;
 
 import java.util.List;
 
+
+//z=1  (scene)
+//z=0  (viewport)
+//z=-1 (camera)
 public class ExampleRaymarchScenes {
-	//position of light in worldspace
-	private static final Vector3 light       = new Vector3(
-			-0.5f,
-			0.2f,
-			0.35f
-	);
 	//"geometry data"
-	private static final Vector3 ball        = new Vector3(
+	private static final Vector3       ball        = new Vector3(
 			0.3f,
 			0.1f,
 			0.8f
 	);
-	private static final float   ballRadius  = 0.5f;
-	private static final Vector3 ballColor   = new Vector3(
+	private static final float         ballRadius  = 0.5f;
+	private static final Vector3       ballColor   = new Vector3(
 			0.15f,
 			0.5f,
 			1f
 	);
-	private static final Vector3 ball2       = new Vector3(
+	private static final Vector3       ball2       = new Vector3(
 			0.0f,
 			0.2f,
-			5.8f
+			2.8f
 	);
-	private static final float   ball2Radius = 0.4f;
-	private static final float   floorPos    = -0.5f;
-
-
+	private static final float         ball2Radius = 0.4f;
+	private static final float         floorPos    = -0.5f;
 	private static final Material      silver      = new Metal(0.95f);
 	private static final Material      futureMetal = new Material("spaceship-panels1");
 	private static final Material      slabs       = new Material("rock-slab-wall");
@@ -52,12 +48,18 @@ public class ExampleRaymarchScenes {
 					futureMetal
 			),
 			new RaymarchSphere(rust, ball, ballRadius),
-			new RaymarchSphere(futureMetal, ball2, ball2Radius)
+			new RaymarchSphere(futureMetal, ball2, ball2Radius),
+			new RaymarchSphere(new Vector3(1, 0, 1), 0.1f)
 	), List.of(
 			new Light(
-					light,
-					new Vector3(1, 1, 1),
-					1f
+					new Vector3(.3f, .5f, -.5f),
+					new Vector3(1, .5f, 1),
+					.6f
+			),
+			new Light(
+					new Vector3(-.3f, 2f, -.5f),
+					new Vector3(.8f, 1, .8f),
+					.2f
 			)
 	));
 	Material test = new Material()

@@ -3,8 +3,11 @@ package com.niton.render;
 
 import com.niton.reactj.ReactiveController;
 import com.niton.reactj.ReactiveProxy;
-import com.niton.render.RaymarchShader.RaymarchRuntime;
 import com.niton.render.api.Renderer;
+import com.niton.render.renderers.MultiCoreRenderer;
+import com.niton.render.renderers.SingleCoreRenderer;
+import com.niton.render.shaders.BaseRaymarchShader;
+import com.niton.render.shaders.EndlessSphereShader;
 import com.niton.render.ui.JShaderPanel;
 import com.niton.render.ui.ReactableSettings;
 import com.niton.render.ui.RenderSettingUI;
@@ -21,18 +24,17 @@ public class Launcher {
 	//set this to true if you want to animate a moving light (looks nice)
 	//framerate is horrible tho
 	//if you want to have it somewhat smooth make the render window tiny
-	static boolean       animated           = false;
-	static boolean       useMultipleThreads = true;
-	static int           renderingThreads   = Runtime.getRuntime().availableProcessors();
-	static RaymarchScene scene              = ExampleRaymarchScenes.scene1;
+	static boolean               animated           = true;
+	static boolean               useMultipleThreads = true;
+	static int                   renderingThreads   = Runtime.getRuntime().availableProcessors();
+	static RaymarchScene         scene              = ExampleRaymarchScenes.scene1;
+	static BaseRaymarchShader<?> shader             = new EndlessSphereShader();//new RaymarchSceneShader(scene);
 
 	public static void main(String[] args) throws Throwable {
 
-		RaymarchSceneShader shader = new RaymarchSceneShader(scene);
-		Renderer<RaymarchRuntime> renderer = useMultipleThreads ? new MultiCoreRenderer<>(
-				RaymarchRuntime::new,
-				renderingThreads
-		) : new SingleCoreRenderer<>(new RaymarchRuntime());
+		Renderer renderer = useMultipleThreads ?
+				new MultiCoreRenderer(renderingThreads) :
+				new SingleCoreRenderer();
 
 
 		//you dont need to understand this
@@ -44,7 +46,7 @@ public class Launcher {
 		JFrame frame = new JFrame();
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setSize(420, 360);
-		var shaderPanel = new JShaderPanel<>(renderer, shader);
+		var shaderPanel = new JShaderPanel(renderer, shader);
 		frame.getContentPane().add(shaderPanel);
 		frame.setVisible(true);
 
@@ -60,7 +62,7 @@ public class Launcher {
 
 	private static void openSettingsUI(
 			ReactiveProxy<ReactableSettings> settingProxy,
-			JShaderPanel<?> r
+			JShaderPanel r
 	) {
 		//creates the UI for the enable/disable buttons
 		JFrame settingFrame = new JFrame();

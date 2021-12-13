@@ -1,8 +1,9 @@
 package com.niton.render.world;
 
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import com.niton.render.MapAsset;
-import com.niton.render.RaymarchSceneShader;
+import com.niton.render.shaders.RaymarchSceneShader;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -58,6 +59,17 @@ public class Material {
 						this.name,
 						type
 				))));
+	}
+
+	public Material(Vector3 color) {
+		albedoMap         = new MapAsset(3, 1, 1);
+		albedoMap.data[0] = color.x;
+		albedoMap.data[1] = color.y;
+		albedoMap.data[2] = color.z;
+		useAOMap          = false;
+		useMetallicMap    = false;
+		useHeightMap      = false;
+		useNormalMap      = false;
 	}
 
 	public Material() {

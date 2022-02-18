@@ -12,7 +12,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static com.niton.render.math.Vector.apply;
+import static com.niton.internal.Vectors.apply;
 import static java.lang.Math.*;
 
 public class MultiCoreRenderer implements Renderer {

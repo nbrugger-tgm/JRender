@@ -38,7 +38,7 @@ public class RaymarchSceneShader extends PbrRaymarchShader<PbrRaymarchShader.Run
 			);
 			float fog = 1;
 			if (settings.useFog()) {
-				fog -= getFog(Math.min(lVecLen, raymarchSettings.getMaxFogDist()));
+				fog -= getFog(Math.min(lVecLen, materialRenderSettings.getMaxFogDist()));
 			}
 			directLight.mulAdd(l.color, l.strenght * lightImpact * fog);
 		}

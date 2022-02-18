@@ -6,12 +6,12 @@ import com.niton.reactj.ReactiveProxy;
 import com.niton.render.api.Renderer;
 import com.niton.render.renderers.MultiCoreRenderer;
 import com.niton.render.renderers.SingleCoreRenderer;
-import com.niton.render.shaders.BaseRaymarchShader;
+import com.niton.render.shaders.RaymarchShader;
 import com.niton.render.shaders.EndlessSphereShader;
 import com.niton.render.ui.JShaderPanel;
 import com.niton.render.ui.ReactableSettings;
 import com.niton.render.ui.RenderSettingUI;
-import com.niton.render.world.ExampleRaymarchScenes;
+import com.niton.render.example.ExampleRaymarchScenes;
 import com.niton.render.world.RaymarchScene;
 
 import javax.swing.*;
@@ -27,15 +27,14 @@ public class Launcher {
 	static boolean               animated           = true;
 	static boolean               useMultipleThreads = true;
 	static int                   renderingThreads   = Runtime.getRuntime().availableProcessors();
-	static RaymarchScene         scene              = ExampleRaymarchScenes.scene1;
-	static BaseRaymarchShader<?> shader             = new EndlessSphereShader();//new RaymarchSceneShader(scene);
+	static RaymarchScene     scene  = ExampleRaymarchScenes.scene1;
+	static RaymarchShader<?> shader = new EndlessSphereShader();//new RaymarchSceneShader(scene);
 
 	public static void main(String[] args) throws Throwable {
 
 		Renderer renderer = useMultipleThreads ?
 				new MultiCoreRenderer(renderingThreads) :
 				new SingleCoreRenderer();
-
 
 		//you dont need to understand this
 		//if you WANT to understand : https://github.com/nbrugger-tgm/reactj

@@ -1,4 +1,4 @@
-package com.niton.render;
+package com.niton.render.api;
 
 import com.badlogic.gdx.math.Vector2;
 

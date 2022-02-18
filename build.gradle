@@ -12,7 +12,7 @@ version '1.0-a'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(11)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }
 
@@ -28,7 +28,6 @@ dependencies {
     implementation 'com.niton:reactj:3.1.0b1'//just ui stuff also made by me
     implementation 'com.niton.reactj:swing:0.1.1'
     implementation 'org.javassist:javassist:3.28.0-GA'//bcs i managed to break dependencies, not in use
-
 }
 
 test {

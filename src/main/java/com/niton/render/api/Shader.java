@@ -26,7 +26,7 @@ public interface Shader<R> {
 		return col;
 	}
 
-	void render(Vector2 screenUV, Vector3 result, R runtume);
+	void render(Vector2 screenUV, Vector3 result, R runtime);
 
 	/**
 	 * Tells the shader the size of the viewport before the rendering process
@@ -38,5 +38,8 @@ public interface Shader<R> {
 	 */
 	void frame();
 
+	/**
+	 * Creates a new runtime. Each thread should have its own runtime
+	 */
 	R createRuntime();
 }

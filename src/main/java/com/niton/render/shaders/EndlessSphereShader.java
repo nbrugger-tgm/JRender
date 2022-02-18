@@ -4,18 +4,23 @@ import com.badlogic.gdx.math.Vector3;
 import com.niton.render.api.SignedDisdanceFunction;
 import com.niton.render.raymarching.SurfaceHit;
 
-import static com.niton.render.math.Vector.apply;
+import static com.niton.internal.Vectors.apply;
 import static java.lang.Math.*;
 
-public class EndlessSphereShader extends BaseRaymarchShader<EndlessSphereShader.Runtime> {
+public class EndlessSphereShader extends RaymarchShader<EndlessSphereShader.Runtime> {
 
 	//ro = ray origin -> start of the raycast (world-space)
 	private final Vector3 camera    = new Vector3(0f, 0f, -1);
 	private final Vector3 offset    = new Vector3(0.1f, 0.1f, 0f);
 	private final Vector3 glowColor = new Vector3(1, 1, 1);
 	private final Vector3 light     = new Vector3(0, 2, -1);
+	private final Vector3 fogColor =  new Vector3(0,1,0);
 
-	public static class Runtime extends BaseRaymarchShader.Runtime {
+	private float getMaxFogDist(){
+		return raymarchSettings.getMaxDist()*0.9f;
+	}
+
+	public static class Runtime extends RaymarchShader.Runtime {
 		private int reflectDepth;
 	}
 
@@ -40,11 +45,11 @@ public class EndlessSphereShader extends BaseRaymarchShader<EndlessSphereShader.
 	protected void resolveSurfaceColor(
 			Vector3 ro, Vector3 rd, SurfaceHit hit, Vector3 result, Runtime runtime
 	) {
-		float fog = falloff(0, raymarchSettings.getMaxFogDist(), hit.camDst);
+		float fog = lerp(0, getMaxFogDist(), hit.camDst);
 		if (settings.useFog() && fog > .975f) {
-			result.set(raymarchSettings.getFogColor());
+			result.set(fogColor);
 		} else if (!hit.hit) {
-			result.set(raymarchSettings.getSkyAlbedo());
+			result.set(fogColor);
 			applyGlow(hit, result);
 		} else {
 			if (settings.useFog() && fog == 1) {
@@ -52,9 +57,9 @@ public class EndlessSphereShader extends BaseRaymarchShader<EndlessSphereShader.
 			}
 			Vector3 normal       = getNormal(hit, runtime);
 			float   stepsPerUnit = hit.steps / hit.camDst;
-			float   c2           = falloff(0, 50, stepsPerUnit);
-			float   c3           = falloff(-1, 1, (float) sin(hit.hp.z * 0.3f));
-			float   c1           = falloff(-1, 1, (float) sin(time * 0.3f));
+			float   c2           = lerp(0, 50, stepsPerUnit);
+			float   c3           = lerp(-1, 1, (float) sin(hit.hp.z * 0.3f));
+			float   c1           = lerp(-1, 1, (float) sin(time * 0.3f));
 			result.set(.1f + (c2) * .9f, .1f * c1 * c2, (.1f + .1f * c1 + c3 * .8f));
 			if (settings.useSurfaceLight())
 				applyLight(hit, result, runtime);
@@ -62,7 +67,7 @@ public class EndlessSphereShader extends BaseRaymarchShader<EndlessSphereShader.
 				applyReflection(hit, rd, result, runtime);
 		}
 		if (settings.useFog()) {
-			result.lerp(raymarchSettings.getFogColor(), fog);
+			result.lerp(fogColor, fog);
 		}
 	}
 
@@ -103,11 +108,11 @@ public class EndlessSphereShader extends BaseRaymarchShader<EndlessSphereShader.
 
 	private void applyGlow(SurfaceHit hit, Vector3 result) {
 		float minDist = getRaymarchSettings().getMinDist();
-		float glow    = 1 - falloff(minDist, minDist * 10, hit.closestDistance);
+		float glow    = 1 - lerp(minDist, minDist * 10, hit.closestDistance);
 		result.lerp(glowColor, glow * 0.2f);
 	}
 
-	private float falloff(float min, float max, float value) {
+	private float lerp(float min, float max, float value) {
 		float valAboveMin = value - min;
 		float range       = max - min;
 		return max(min(valAboveMin / range, 1f), 0f);

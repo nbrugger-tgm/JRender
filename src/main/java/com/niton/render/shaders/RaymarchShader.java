@@ -7,31 +7,32 @@ import com.niton.render.raymarching.RaymarchSettings;
 import com.niton.render.raymarching.RenderSettings;
 import com.niton.render.raymarching.SurfaceHit;
 
-public abstract class BaseRaymarchShader<R extends BaseRaymarchShader.Runtime>
+/**
+ * A shader that is based on raymarching, just implements the raymarch algorithm, no textures or
+ * anything else
+ */
+public abstract class RaymarchShader<R extends RaymarchShader.Runtime>
 		implements Shader<R> {
-	protected final long             creationTime     = System.currentTimeMillis();
+	private final long             creationTime     = System.currentTimeMillis();
 	/**
 	 * The time since the shader was created (in seconds)
 	 */
-	protected       float            time;
+	protected     float            time;
 	/**
 	 * the number of the currently rendered frame
 	 */
-	protected       int              frame;
+	protected     int              frame;
 	/**
 	 * Time since the last frame (seconds)
 	 */
-	protected       float            delta;
+	protected     float            delta;
 	/**
 	 * Width/height ratio of the current frame
 	 */
-	protected       float            ratio;
-	protected       RenderSettings   settings;
-	protected       RaymarchSettings raymarchSettings = new RaymarchSettings();
-	/**
-	 *
-	 */
-	private         long             lastFrame;
+	protected     float            ratio;
+	protected     RenderSettings   settings;
+	protected     RaymarchSettings raymarchSettings = new RaymarchSettings();
+	private       long             lastFrame;
 
 	/**
 	 * Keep data that changes during the rendering of a single pixel in here,

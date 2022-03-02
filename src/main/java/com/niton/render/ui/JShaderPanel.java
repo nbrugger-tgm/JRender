@@ -15,9 +15,9 @@ import java.awt.image.WritableRaster;
  * <p>
  * (still useable as a jpanel if you want)
  */
-public class JShaderPanel<R> extends JPanel {
-	private final Renderer<R>   renderer;
-	private final Shader<R>     shader;
+public class JShaderPanel extends JPanel {
+	private final Renderer      renderer;
+	private final Shader<?>     shader;
 	private       BufferedImage img;
 
 	private static class RasterTarget implements RenderTarget {
@@ -31,10 +31,10 @@ public class JShaderPanel<R> extends JPanel {
 
 		@Override
 		public void draw(int x, int y, Vector3 color) {
-			final float[] colorBuffer = new float[3];
-			colorBuffer[0] = color.x;
-			colorBuffer[1] = color.y;
-			colorBuffer[2] = color.z;
+			final int[] colorBuffer = new int[3];
+			colorBuffer[0] = (int) color.x;
+			colorBuffer[1] = (int) color.y;
+			colorBuffer[2] = (int) color.z;
 			raster.setPixel(x, y, colorBuffer);
 		}
 
@@ -49,7 +49,7 @@ public class JShaderPanel<R> extends JPanel {
 		}
 	}
 
-	public JShaderPanel(Renderer<R> renderer, Shader<R> shader) {
+	public JShaderPanel(Renderer renderer, Shader<?> shader) {
 		this.renderer = renderer;
 		this.shader   = shader;
 	}

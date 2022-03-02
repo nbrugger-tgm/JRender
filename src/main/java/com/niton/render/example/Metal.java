@@ -1,9 +1,9 @@
-package com.niton.render;
+package com.niton.render.example;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
-import com.niton.render.world.Material;
-import com.niton.render.world.Surface;
+import com.niton.render.material.Material;
+import com.niton.render.material.MaterialSurface;
 
 public class Metal extends Material
 {
@@ -13,9 +13,9 @@ public class Metal extends Material
 	public Metal(float metallic) {
 		this.metallic = metallic;
 	}
-	public Surface getPoint(Vector2 surface2UV) {
-		Surface sur = new Surface();
-		sur.albedo = color.cpy();
+	public MaterialSurface getPoint(Vector2 surface2UV) {
+		MaterialSurface sur = new MaterialSurface();
+		sur.albedo.set(color);
 		sur.refect = metallic;
 		return sur;
 	}

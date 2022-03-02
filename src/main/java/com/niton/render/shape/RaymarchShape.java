@@ -1,25 +1,29 @@
 package com.niton.render.shape;
 
 import com.badlogic.gdx.math.Vector3;
-import com.niton.render.*;
 import com.niton.render.api.SignedDisdanceFunction;
 import com.niton.render.api.UvMapper;
-import com.niton.render.world.Material;
+import com.niton.render.raymarching.SurfaceHit;
+import com.niton.render.material.Material;
 
 public class RaymarchShape extends AbstractRaymarchShape {
 	public final SignedDisdanceFunction sdf;
-	public final UvMapper uvMap;
+	public final UvMapper               uvMap;
 
-	public RaymarchShape(SignedDisdanceFunction sdf,
-	                     UvMapper uvMap) {
+	public RaymarchShape(
+			SignedDisdanceFunction sdf,
+			UvMapper uvMap
+	) {
 		super(new Material());
 		this.sdf   = sdf;
 		this.uvMap = uvMap;
 	}
 
-	public RaymarchShape(SignedDisdanceFunction sdf,
-	                     UvMapper uvMap,
-	                     Material mat) {
+	public RaymarchShape(
+			SignedDisdanceFunction sdf,
+			UvMapper uvMap,
+			Material mat
+	) {
 		super(mat);
 		this.sdf   = sdf;
 		this.uvMap = uvMap;

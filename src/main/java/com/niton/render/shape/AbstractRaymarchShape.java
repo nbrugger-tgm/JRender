@@ -2,7 +2,7 @@ package com.niton.render.shape;
 
 import com.niton.render.api.SignedDisdanceFunction;
 import com.niton.render.api.UvMapper;
-import com.niton.render.world.Material;
+import com.niton.render.material.Material;
 
 /**
  * Defines a shape in the realm of raymarch.

@@ -42,7 +42,7 @@ public class MapAsset {
 		for (int x = 0; x < w; x++) {
 			for (int y = 0; y < h; y++) {
 				int pxl      = image.getRGB(x, y);
-				int pxlIndex = components * (y * w + x);
+				int pxlIndex = getIndex(x, y);
 				for (int i = 0; i < components; i++) {
 					data[pxlIndex + components - (i + 1)] = ((pxl >> i * 8) & 0xff) * NORMAL;
 				}
@@ -57,8 +57,26 @@ public class MapAsset {
 	public float[] get(Vector2 surfaceUV, float[] out) {
 		int x       = (int) (w * surfaceUV.x);
 		int y       = (int) (h * surfaceUV.y);
-		int pxlCord = components * (y * w + x);
+		int pxlCord = getIndex(x, y);
 		System.arraycopy(data, pxlCord, out, 0, components);
 		return out;
+	}
+
+	private int getIndex(int x, int y) {
+		return components * (y * w + x);
+	}
+
+	public float getSingle(Vector2 surfaceUV){
+		int x       = (int) (w * surfaceUV.x);
+		int y       = (int) (h * surfaceUV.y);
+		if(components != 1)
+			throw new IllegalStateException("getSingle is not allowed on a multi component asset");
+		return data[getIndex(x,y)];
+	}
+
+	public void invert() {
+		for (int i = 0; i < data.length; i++) {
+			data[i] = 1-data[i];
+		}
 	}
 }

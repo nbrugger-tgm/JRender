@@ -3,12 +3,19 @@ package com.niton.render.shaders;
 import com.badlogic.gdx.math.Quaternion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.niton.render.material.Material;
+import com.niton.render.material.MaterialFeature;
 import com.niton.render.raymarching.HeightMappedSurface;
 import com.niton.render.material.MaterialRenderSettings;
 import com.niton.render.material.MaterialSurface;
 import com.niton.render.raymarching.SurfaceHit;
 import com.niton.render.shape.AbstractRaymarchShape;
 
+import static com.niton.render.material.MaterialFeature.AMBIENT_OCCLUSION;
+import static com.niton.render.material.MaterialFeature.HEIGHT_MAP;
+import static com.niton.render.material.MaterialFeature.METALLIC;
+import static com.niton.render.material.MaterialFeature.NORMALS;
+import static com.niton.render.material.MaterialFeature.TEXTURE;
 import static java.lang.Math.*;
 
 /**
@@ -27,12 +34,12 @@ public abstract class PbrRaymarchShader<R extends PbrRaymarchShader.Runtime>
 
 	protected MaterialRenderSettings materialRenderSettings = new MaterialRenderSettings();
 
-
 	public static class Runtime extends RaymarchShader.Runtime {
 		public AbstractRaymarchShape hitObject;
 		//keeps deep the reflection hierarchy is, to possiby interrupt
 		public float                 reflectiveVisibility;
 		public boolean               passthruRendered;
+		public final Vector3 aoScaler = new Vector3();
 	}
 
 	@Override
@@ -97,7 +104,7 @@ public abstract class PbrRaymarchShader<R extends PbrRaymarchShader.Runtime>
 		surface = hitObject.mat.getPoint(surface2UV);
 
 		//apply height map
-		if (settings.useHeightMap() && materialRenderSettings.getMaxHmapDist() > hit.camDst) {
+		if (settings.useHeightMap() && hitObject.mat.isFeatureEnabled(HEIGHT_MAP) &&materialRenderSettings.getMaxHmapDist() > hit.camDst) {
 			//the way i apply heightmaps might be bad or "non standard" as i have no idea
 			//how this is normally done (also restricted myself from googling).
 			//What i have done is very CPU intensive but it works
@@ -117,13 +124,13 @@ public abstract class PbrRaymarchShader<R extends PbrRaymarchShader.Runtime>
 			}
 		}
 
-		if (settings.useTextures())
+		if (settings.useTextures() && hitObject.mat.isFeatureEnabled(TEXTURE))
 			out.set(surface.albedo);
 		else
 			out.set(1, 1, 1);
 
 		//apply normal map
-		if (settings.useNormalMaps())
+		if (settings.useNormalMaps() && hitObject.mat.isFeatureEnabled(NORMALS))
 			//broken for spheres, WELP, no idea why
 			applyNormalMap(normal, surface);
 
@@ -140,9 +147,24 @@ public abstract class PbrRaymarchShader<R extends PbrRaymarchShader.Runtime>
 			applyLight(hit, out, normal, run);
 
 		//apply reflections (uses recursion for GPUs you would need a workaround)
-		if (settings.useReflections())
+		if (settings.useReflections() && hitObject.mat.isFeatureEnabled(METALLIC))
 			//Ambient occlusion should work the same just with scl() instead of lerp()
 			applyReflection(hit, out, surface, rd, normal, run);
+		if(settings.useAmbientOcclusion()){
+			applyAoMap(hit, hitObject.mat, surface, out, run);
+		}
+	}
+
+	private void applyAoMap(SurfaceHit hit, Material mat, MaterialSurface surface, Vector3 out, R run)
+	{
+
+		float ao = hit.steps/500f;
+		if(mat.isFeatureEnabled(AMBIENT_OCCLUSION)){
+			ao += surface.ao;
+		}
+		ao = Math.max(0,ao);
+		run.aoScaler.set(1,1,1).lerp(materialRenderSettings.getAoColor(),ao);
+		out.scl(run.aoScaler);
 	}
 
 	public AbstractRaymarchShape getHitObject(Runtime runtime) {
@@ -195,21 +217,12 @@ public abstract class PbrRaymarchShader<R extends PbrRaymarchShader.Runtime>
 		 *  texture(surface) and normal for further effects to apply on top of it
 		 */
 		var pbr = materialRenderSettings;
-
-		final float falloffRange = pbr.getMaxHmapDist() - pbr.getStartHmapFalloff();
-		final float falloff = min(
-				1,
-				max(
-						0,
-						(hit.camDst - pbr.getStartHmapFalloff()) / falloffRange
-				)
+		final float PBR_STRENGTH = pbr.getPbrStrength();
+		final float PBR_STEPS    = pbr.getPbrSteps();
+		float step = (PBR_STRENGTH / PBR_STEPS) * Math.max(
+			0.3f,
+			rd.dot(normal)
 		);
-
-		final float PBR_STRENGTH  = pbr.getPbrStrength();
-		final float PBR_STEPS     = pbr.getPbrSteps() * (1 - falloff);
-		final float MIN_STEP_SIZE = (PBR_STRENGTH / PBR_STEPS);
-		final float step          = MIN_STEP_SIZE;//Binary rework
-
 		float               posDeph    = 0;//depth we are into the surface
 		HeightMappedSurface mappedSurf = new HeightMappedSurface();
 		mappedSurf.surf     = surface;
@@ -217,7 +230,7 @@ public abstract class PbrRaymarchShader<R extends PbrRaymarchShader.Runtime>
 		mappedSurf.albedo   = albedo;
 		mappedSurf.passthru = false;
 		int i = 0;
-		while (mappedSurf.surf.depth * PBR_STRENGTH - posDeph < step / 2 && i < (PBR_STEPS * PBR_STEPS)) {
+		while (mappedSurf.surf.depth * PBR_STRENGTH - posDeph >= step / 2 && i < (PBR_STEPS * PBR_STEPS)) {
 			hit.hp.mulAdd(rd, step);
 			hit.camDst += step;
 
@@ -231,6 +244,7 @@ public abstract class PbrRaymarchShader<R extends PbrRaymarchShader.Runtime>
 				behindHit.camDst += hit.camDst;
 				resolveSurfaceColor(getCameraPos(), rd, behindHit, mappedSurf.albedo, run);
 				mappedSurf.passthru = true;
+				mappedSurf.normal = getNormal(hit, run);
 				return mappedSurf;
 			}
 
@@ -240,12 +254,11 @@ public abstract class PbrRaymarchShader<R extends PbrRaymarchShader.Runtime>
 			Vector3 surfaceUV  = hitObject.getUVCord(hit);
 			Vector2 surface2UV = surfaceUVToObjectSpace(surfaceUV);
 
-			mappedSurf.surf   = hitObject.mat.getPoint(surface2UV);
-			mappedSurf.normal = getNormal(hit, run);
-			posDeph           = dstToSurf;
+			hitObject.mat.getPoint(surface2UV,mappedSurf.surf);
+			posDeph += dstToSurf;
 			i++;
-
 		}
+		mappedSurf.normal = getNormal(hit, run);
 		return mappedSurf;
 	}
 

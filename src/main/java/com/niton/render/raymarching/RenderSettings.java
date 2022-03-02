@@ -6,6 +6,7 @@ public class RenderSettings {
 	private boolean useHeightMap;
 	private boolean useReflections;
 	private boolean useSurfaceLight;
+	private boolean useAmbientOcclusion;
 	private boolean useFog;
 	private boolean useDirectLight;
 	private boolean useShadows = true;
@@ -36,6 +37,16 @@ public class RenderSettings {
 
 	public boolean useReflections() {
 		return useReflections;
+	}
+
+	public void setUseAmbientOcclusion(boolean useAmbientOcclusion)
+	{
+		this.useAmbientOcclusion = useAmbientOcclusion;
+	}
+
+	public boolean useAmbientOcclusion()
+	{
+		return useAmbientOcclusion;
 	}
 
 	public void setUseReflections(boolean useReflections) {

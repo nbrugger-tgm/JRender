@@ -1,5 +1,9 @@
 package com.niton.render.shaders;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.niton.render.api.Shader;
@@ -40,6 +44,8 @@ public abstract class RaymarchShader<R extends RaymarchShader.Runtime>
 	 * in the Shader itself as it will break multi thread rendering</b>
 	 */
 	public static class Runtime {
+		final Vector3 rd = new Vector3();
+		final Map<Vector2,Vector3> screenUvCache = new HashMap<>();
 	}
 
 	public RaymarchSettings getRaymarchSettings() {
@@ -57,14 +63,27 @@ public abstract class RaymarchShader<R extends RaymarchShader.Runtime>
 	@Override
 	public void render(Vector2 screenUV, Vector3 result, R runtime) {
 		Vector3 ro      = getCameraPos();
-		Vector3 worldUV = screenToWorldUV(screenUV, ro);
-		Vector3 rd      = worldUV.cpy().sub(ro).nor();
+		var rd = runtime.rd.cpy();
+		rd.set(
+			//screenToWorldFunction.apply(screenUV)
+			runtime.screenUvCache.computeIfAbsent(screenUV, screenToWorldFunction)
+		);
+		rd.nor();
 
 		prepareRuntime(runtime);
 
 		SurfaceHit hit = raymarch(ro, rd, runtime);
 
 		resolveSurfaceColor(ro, rd, hit, result, runtime);
+	}
+
+	private final Function<Vector2,Vector3> screenToWorldFunction = this::screenToWorld;
+
+	private Vector3 screenToWorld(Vector2 uv)
+	{
+		Vector3 toCache = new Vector3();
+		screenToWorldUV(uv, toCache);
+		return toCache;
 	}
 
 	@Override
@@ -85,15 +104,14 @@ public abstract class RaymarchShader<R extends RaymarchShader.Runtime>
 	/**
 	 * Calculates the position of the pixel(screenUV) in the 3d environment.
 	 *
-	 * @param ro       the camera position
 	 * @param screenUV the UV of the screen pixel [0..1]
 	 *
-	 * @return a uv in 3d space [n..-n]
+	 * @return the screenUv in 3d space [n..-n]
 	 */
-	protected Vector3 screenToWorldUV(Vector2 screenUV, Vector3 ro) {
+	protected Vector3 screenToWorldUV(Vector2 screenUV, Vector3 worldUv) {
 		screenUV.sub(0.5f, 0.5f);
-		screenUV.y *= -1;
-		return new Vector3(ro.x + screenUV.x * ratio, ro.y + screenUV.y, ro.z + 1);
+		screenUV.y = -screenUV.y;
+		return worldUv.set(screenUV.x * ratio, screenUV.y, 1);
 	}
 
 	/**
@@ -115,13 +133,14 @@ public abstract class RaymarchShader<R extends RaymarchShader.Runtime>
 	//how raymarching works is a lil complicated to understand watch this of you need help:
 	//"Raymarching for dummies"
 	protected SurfaceHit raymarch(Vector3 ro, Vector3 rd, R runtime) {
-		Vector3    currentPosition = ro.cpy();
+		var currentPosition = ro.cpy();
 		SurfaceHit hit             = new SurfaceHit();
 
-		final int   MAX_STEPS = raymarchSettings.getMaxSteps();
-		final float MAX_DIST  = raymarchSettings.getMaxDist();
-		final float MIN_DIST  = raymarchSettings.getMinDist();
-		float       dist      = MAX_DIST;
+		final int   MAX_STEPS 	  = raymarchSettings.getMaxSteps();
+		final float MAX_DIST 	  = raymarchSettings.getMaxDist();
+		final float MAX_CAM_DIST  = raymarchSettings.getMaxCamDist();
+		final float MIN_DIST 	  = raymarchSettings.getMinDist();
+		float       dist     	  = MAX_DIST;
 		for (int i = 0; i < MAX_STEPS; i++) {
 			hit.steps = i + 1;
 			dist      = sdf(currentPosition, runtime);
@@ -136,6 +155,9 @@ public abstract class RaymarchShader<R extends RaymarchShader.Runtime>
 
 			//into the void
 			if (dist > MAX_DIST) {
+				return hit;
+			}
+			if(hit.camDst > MAX_CAM_DIST) {
 				return hit;
 			}
 

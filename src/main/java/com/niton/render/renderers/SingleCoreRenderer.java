@@ -1,5 +1,9 @@
 package com.niton.render.renderers;
 
+import static com.niton.internal.Vectors.apply;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.niton.render.api.RenderTarget;
@@ -30,7 +34,8 @@ public class SingleCoreRenderer implements Renderer {
 				uv.set(ux, uy);
 				shader.render(uv, out, runtime);
 				out.scl(255);
-				out.clamp(0, 255);
+				apply(out, i -> max(i, 0));
+				apply(out, i -> min(i, 255));
 
 				target.draw(x, y, out);
 			}

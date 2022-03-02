@@ -55,8 +55,12 @@ public class RaymarchSceneShader extends PbrRaymarchShader<PbrRaymarchShader.Run
 		float                 dst      = raymarchSettings.getMaxDist();
 		AbstractRaymarchShape hitShape = null;
 
+		var objects = scene.getObjects().size();
 		//this for loop basically is chaining many Math.min(shapeDis,dst) calls for
-		for (AbstractRaymarchShape shape : scene.getObjects()) {
+		//using fori instead of for each for performance, (no iterator initialisation)
+		for (int i = 0; i < objects; i++)
+		{
+			var shape = scene.getObjects().get(i);
 			float shapeDis = shape.sdf(p);
 			if (shapeDis < dst) {
 				dst      = shapeDis;

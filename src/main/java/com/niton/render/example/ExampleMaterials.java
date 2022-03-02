@@ -1,6 +1,7 @@
 package com.niton.render.example;
 
 import com.niton.render.material.Material;
+import com.niton.render.material.MaterialFeature;
 
 public final class ExampleMaterials {
 	public static final Material polishedSilver = new Metal(0.975f);
@@ -10,5 +11,9 @@ public final class ExampleMaterials {
 	public static final Material slabs          = new Material("rock-slab-wall");
 	public static final Material rust           = new Material("rustediron2");
 	public static final Material test           = new Material("test");
+
+	static {
+		rust.getFeatureAsset(MaterialFeature.METALLIC).invert();
+	}
 	private ExampleMaterials() {}
 }

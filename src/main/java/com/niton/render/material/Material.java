@@ -92,9 +92,8 @@ public class Material {
 	}
 
 	public boolean isFeatureEnabled(MaterialFeature feature) {
-		return Optional.ofNullable(features.get(feature))
-		               .map(FeatureEntry::enabled)
-		               .orElse(false);
+		var featEntry = features.get(feature);
+		return featEntry != null && featEntry.enabled;
 	}
 
 	/**
@@ -124,8 +123,16 @@ public class Material {
 	}
 
 	public MaterialSurface getPoint(Vector2 surface2UV) {
-		var     surface = new MaterialSurface();
+		var surf = new MaterialSurface();
+		getPoint(surface2UV,surf);
+		return surf;
+	}
+
+
+	public void getPoint(Vector2 surface2UV,MaterialSurface surface) {
 		float[] buff    = new float[3];
+
+
 		if (isFeatureEnabled(TEXTURE))
 			surface.albedo.set(getFeatureAsset(TEXTURE).get(surface2UV, buff));
 
@@ -134,18 +141,16 @@ public class Material {
 			              .sub(0.5f).scl(2).nor();
 
 		if (isFeatureEnabled(HEIGHT_MAP))
-			surface.depth = 1 - getFeatureAsset(HEIGHT_MAP).get(surface2UV, buff)[0];
+			surface.depth = 1 - getFeatureAsset(HEIGHT_MAP).getSingle(surface2UV);
 
 		if (isFeatureEnabled(AMBIENT_OCCLUSION))
-			surface.ao = getFeatureAsset(AMBIENT_OCCLUSION).get(surface2UV, buff)[0];
+			surface.ao = getFeatureAsset(AMBIENT_OCCLUSION).getSingle(surface2UV);
 
 		if (isFeatureEnabled(METALLIC))
-			surface.refect = getFeatureAsset(METALLIC).get(surface2UV, buff)[0];
-
-		return surface;
+			surface.refect = getFeatureAsset(METALLIC).getSingle(surface2UV);
 	}
 
 	public MapAsset getFeatureAsset(MaterialFeature feature) {
-		return Optional.ofNullable(features.get(feature)).map(FeatureEntry::asset).orElse(null);
+		return features.get(feature).asset;
 	}
 }

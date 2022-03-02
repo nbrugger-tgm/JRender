@@ -7,6 +7,16 @@ public class RaymarchSettings {
 	//the amount of raymarching steps before interrupting (influences rendering around edges)
 	private int   maxSteps = 5_000;
 
+	private float maxCamDist = 40;
+
+	public float getMaxCamDist() {
+		return maxCamDist;
+	}
+
+	public void setMaxCamDist(float maxCamDist) {
+		this.maxCamDist = maxCamDist;
+	}
+
 	public float getMinDist() {
 		return minDist;
 	}

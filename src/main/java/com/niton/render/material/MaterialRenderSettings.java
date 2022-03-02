@@ -10,8 +10,9 @@ public class MaterialRenderSettings {
 	//Distance at which the fog is the only thing you see -> cant see beyond this distance
 	private             float   maxFogDist = 19f;
 
+	private Vector3 aoColor = new Vector3(.58f,.53f,.58f).scl(1.6f);
 	//how much carving the heightmap causes             value in world space
-	private float pbrStrength = 0.05f;
+	private float pbrStrength = 0.085f;
 
 	//VERY CPU HEAVY    defines how many steps to make to march thru pseudo space caused by heightmaps
 	//makes "fake" edges from heightmaps look way better, recommended range 10-70
@@ -36,6 +37,11 @@ public class MaterialRenderSettings {
 			0.23f,
 			0.6f
 	);
+
+	public Vector3 getAoColor()
+	{
+		return aoColor;
+	}
 
 	public float getMaxFogDist() {
 		return maxFogDist;

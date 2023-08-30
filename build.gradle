@@ -19,14 +19,14 @@ java {
 repositories {
     mavenCentral()
     maven {
-        url "https://niton.jfrog.io/artifactory/java-libs/"
+        url 'https://jitpack.io'
     }
 }
 
 dependencies {
     implementation group: 'com.badlogicgames.gdx', name: 'gdx', version: '1.10.0'//vector lib in use
-    implementation 'com.niton:reactj:3.1.0b4'//just ui stuff also made by me
-    implementation 'com.niton.reactj:swing:0.1.1'
+    implementation 'com.github.nbrugger-tgm:reactj:3.1.0b4'//just ui stuff also made by me
+    implementation 'com.github.nbrugger-tgm:reactj-swing:0.1.2'
     implementation 'org.javassist:javassist:3.28.0-GA'//bcs i managed to break dependencies, not in use
 }
 

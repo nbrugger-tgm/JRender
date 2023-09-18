@@ -1,13 +1,13 @@
 package com.niton.render.raymarching;
 
 public class RenderSettings {
-	private boolean useTextures;
-	private boolean useNormalMaps;
+	private boolean useTextures = true;
+	private boolean useNormalMaps = true;
 	private boolean useHeightMap;
 	private boolean useReflections;
-	private boolean useSurfaceLight;
+	private boolean useSurfaceLight = true;
 	private boolean useAmbientOcclusion;
-	private boolean useFog;
+	private boolean useFog = true;
 	private boolean useDirectLight;
 	private boolean useShadows = true;
 

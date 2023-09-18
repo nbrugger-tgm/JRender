@@ -37,26 +37,33 @@ public class Material {
 	}
 
 	public Material(String name) {
+		this(name, DEFAULT_FORMAT);
+	}
+	public Material(String name, String ext) {
 		this.name = Optional.of(name);
-		loadSupportedFeatures();
+		loadSupportedFeatures(ext);
 		readMaps();
+	}
+
+	public void loadSupportedFeatures() {
+		loadSupportedFeatures(DEFAULT_FORMAT);
 	}
 
 	/**
 	 * enables / disables each feature based on if a regarding files is present.
 	 * Only looks for "png" files
 	 */
-	public void loadSupportedFeatures() {
+	public void loadSupportedFeatures(String ext) {
 		String fileName = name.orElseThrow(
 				() -> new IllegalStateException("Material has no name to load with")
 		);
 		for (var feature : MaterialFeature.values()) {
 			try (
 					var stream = this.getClass().getResourceAsStream(
-							feature.getFileName(fileName, DEFAULT_FORMAT)
+							feature.getFileName(fileName, ext)
 					)
 			) {
-				enableFeature(feature, stream != null);
+				enableFeature(feature, stream != null, ext);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -85,8 +92,8 @@ public class Material {
 	}
 
 
-	public Material enableFeature(MaterialFeature feature, boolean enable) {
-		features.computeIfAbsent(feature, k -> new FeatureEntry(enable, null, DEFAULT_FORMAT));
+	public Material enableFeature(MaterialFeature feature, boolean enable, String ext) {
+		features.computeIfAbsent(feature, k -> new FeatureEntry(enable, null, ext));
 		features.computeIfPresent(feature, (k, v) -> v.enable(enable));
 		return this;
 	}
@@ -98,7 +105,7 @@ public class Material {
 
 	/**
 	 * Setting a map for a feature also enables the feature if not defined otherwise using {@link
-	 * #enableFeature(MaterialFeature, boolean)}
+	 * #enableFeature(MaterialFeature, boolean, String)}
 	 */
 	public void setFeatureAsset(MaterialFeature feature, MapAsset asset) {
 		features.computeIfAbsent(feature, k -> new FeatureEntry(true, asset, DEFAULT_FORMAT));

@@ -158,13 +158,16 @@ public abstract class PbrRaymarchShader<R extends PbrRaymarchShader.Runtime>
 	private void applyAoMap(SurfaceHit hit, Material mat, MaterialSurface surface, Vector3 out, R run)
 	{
 
-		float ao = hit.steps/500f;
+		float ao ;
 		if(mat.isFeatureEnabled(AMBIENT_OCCLUSION)){
-			ao += surface.ao;
+			ao = 1-surface.ao;
+		} else {
+			ao = hit.steps/500f;
+			ao = Math.max(0,ao);
+			ao = Math.min(1,ao);
 		}
-		ao = Math.max(0,ao);
-		run.aoScaler.set(1,1,1).lerp(materialRenderSettings.getAoColor(),ao);
-		out.scl(run.aoScaler);
+		ao *= 0.8f;
+		out.scl(1-ao);
 	}
 
 	public AbstractRaymarchShape getHitObject(Runtime runtime) {
@@ -345,7 +348,7 @@ public abstract class PbrRaymarchShader<R extends PbrRaymarchShader.Runtime>
 	}
 
 	protected Vector3 getReflectionVector(Vector3 rd, Vector3 normal) {
-		return rd.cpy().add(normal).nor();//just math
+		return rd.cpy().sub(normal.scl(rd.dot(normal)*2));//just math
 	}
 
 	/**

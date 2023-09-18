@@ -44,7 +44,7 @@ public final class ExampleRaymarchScenes {
 					new RaymarchShape(
 							ExampleRaymarchScenes::sdfFloor,
 							ExampleRaymarchScenes::planeUVMap,
-							futureMetal
+							paintedWood
 					),
 					new RaymarchSphere(rust, ball, ballRadius),
 					new RaymarchSphere(futureMetal, ball2, ball2Radius),
@@ -60,6 +60,42 @@ public final class ExampleRaymarchScenes {
 							new Vector3(-.5f, 1.5f, -.5f),
 							rgb(232, 187, 149),
 							.5f
+					)
+			)
+	);
+	public static final RaymarchScene scene5 = new RaymarchScene(
+			List.of(
+					new RaymarchShape(
+							ExampleRaymarchScenes::sdfFloor,
+							ExampleRaymarchScenes::planeUVMap,
+							rust
+					),
+					new RaymarchSphere(rock, new Vector3(
+							0.3f,
+							-0.1f,
+							2.8f
+					), ballRadius),
+					new RaymarchSphere(rock, new Vector3(
+							-0.95f,
+							-0.2f,
+							1.3f
+					), ballRadius)
+			),
+			List.of(
+					new Light(
+							new Vector3(0f, 2f, -2f),
+							rgb(250, 250, 250),
+							1.5f
+					),
+					new Light(
+							new Vector3(3.5f, 0f, 0.5f),
+							rgb(250, 250, 170),
+							0.6f
+					),
+					new Light(
+							new Vector3(-3.5f, 0f, -0.5f),
+							rgb(170, 170, 250),
+							0.6f
 					)
 			)
 	);

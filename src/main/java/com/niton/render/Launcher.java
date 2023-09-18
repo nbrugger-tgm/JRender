@@ -35,11 +35,12 @@ public class Launcher
     //framerate is horrible tho
     //if you want to have it somewhat smooth make the render window tiny
     static Shader<?>[] shaders = {
-        new EndlessSphereShader(),
-        new RaymarchSceneShader(ExampleRaymarchScenes.scene1),
-        new RaymarchSceneShader(ExampleRaymarchScenes.scene2),
-        new RaymarchSceneShader(ExampleRaymarchScenes.scene3),
-        new RaymarchSceneShader(ExampleRaymarchScenes.scene4)
+            new RaymarchSceneShader(ExampleRaymarchScenes.scene5),
+            new EndlessSphereShader(),
+            new RaymarchSceneShader(ExampleRaymarchScenes.scene1),
+            new RaymarchSceneShader(ExampleRaymarchScenes.scene2),
+            new RaymarchSceneShader(ExampleRaymarchScenes.scene3),
+            new RaymarchSceneShader(ExampleRaymarchScenes.scene4)
     };
     static JFrame frame = new JFrame();
     static ExampleSettings env;
@@ -50,13 +51,13 @@ public class Launcher
         frame.setSize(420, 360);
         frame.setVisible(true);
 
-        env = create(ExampleSettings.class,shaders.length);
+        env = create(ExampleSettings.class, shaders.length);
         var envObserver = new Observer<>() {
             @Override
             public void onChange(String s, Object o) {
                 Renderer renderer = env.isUseMultipleThreads() ?
-                    new MultiCoreRenderer(env.getRenderingThreads()) :
-                    new SingleCoreRenderer();
+                        new MultiCoreRenderer(env.getRenderingThreads()) :
+                        new SingleCoreRenderer();
                 var shaderPanel = new JShaderPanel(renderer, shaders[env.getCurrentShader()]);
                 frame.getContentPane().removeAll();
                 frame.getContentPane().add(shaderPanel);
@@ -88,16 +89,16 @@ public class Launcher
                 frame.repaint();
                 frame.validate();
             }
-            delta = (int) (System.currentTimeMillis()-lastFrame);
+            delta = (int) (System.currentTimeMillis() - lastFrame);
             lastFrame = System.currentTimeMillis();
-            if(delta<16)
-                Thread.sleep(max(0,16-delta));
+            if (delta < 16)
+                Thread.sleep(max(0, 16 - delta));
         }
     }
 
     private static void openSettingsUI(
-        ReactableSettings settings,
-        Component r
+            ReactableSettings settings,
+            Component r
     ) {
         //creates the UI for the enable/disable buttons
         JFrame settingFrame = new JFrame();
